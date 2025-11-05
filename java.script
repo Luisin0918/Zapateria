@@ -1,0 +1,103 @@
+// ---- MODAL Y SELECCIÓN DE PRODUCTOS ----
+const modal = document.getElementById("modal");
+const cerrar = document.querySelector(".cerrar");
+const botones = document.querySelectorAll(".card button");
+const titulo = document.getElementById("modal-titulo");
+const selectTalla = document.getElementById("talla");
+const selectColor = document.getElementById("color");
+const cantidad = document.getElementById("cantidad");
+const precioTotal = document.getElementById("precio-total");
+let precioUnitario = 0;
+
+// Abrir modal con opciones correctas
+botones.forEach(boton => {
+  boton.addEventListener("click", e => {
+    const card = e.target.closest(".card");
+    titulo.textContent = card.dataset.nombre;
+    precioUnitario = parseFloat(card.dataset.precio);
+
+    // Cargar tallas disponibles
+    const tallas = card.dataset.tallas.split(",");
+    selectTalla.innerHTML = tallas.map(t => `<option value="${t}">${t}</option>`).join("");
+
+    // Cargar colores disponibles
+    const colores = card.dataset.colores.split(",");
+    selectColor.innerHTML = colores.map(c => `<option value="${c}">${c}</option>`).join("");
+
+    cantidad.value = 1;
+    precioTotal.textContent = `Total: $${precioUnitario}`;
+    modal.style.display = "flex";
+  });
+});
+
+// Cerrar modal
+cerrar.addEventListener("click", () => { modal.style.display = "none"; });
+window.addEventListener("click", e => { if(e.target == modal) modal.style.display="none"; });
+
+// Actualizar precio según cantidad
+cantidad.addEventListener("input", () => {
+  const total = precioUnitario * parseInt(cantidad.value);
+  precioTotal.textContent = `Total: $${total}`;
+});
+
+// ---- CARRITO DE COMPRAS ----
+let carrito = [];
+
+function actualizarCarrito() {
+  const lista = document.getElementById("lista-carrito");
+  lista.innerHTML = "";
+  let total = 0;
+  carrito.forEach((item, index) => {
+    const div = document.createElement("div");
+    div.classList.add("item-carrito");
+    div.innerHTML = `
+      <span>${item.nombre}</span>
+      <span>Talla: ${item.talla}</span>
+      <span>Color: ${item.color}</span>
+      <span>Cant: ${item.cantidad}</span>
+      <span>$${item.precio * item.cantidad}</span>
+      <button onclick="eliminarDelCarrito(${index})">❌</button>
+    `;
+    lista.appendChild(div);
+    total += item.precio * item.cantidad;
+  });
+  document.getElementById("total-carrito").textContent = `Total: $${total}`;
+}
+
+function eliminarDelCarrito(index) {
+  carrito.splice(index,1);
+  actualizarCarrito();
+}
+
+// Agregar producto desde modal al carrito
+document.getElementById("form-compra").addEventListener("submit", e=>{
+  e.preventDefault();
+  carrito.push({
+    nombre: titulo.textContent,
+    talla: selectTalla.value,
+    color: selectColor.value,
+    cantidad: parseInt(cantidad.value),
+    precio: precioUnitario
+  });
+  modal.style.display = "none";
+  actualizarCarrito();
+});
+
+// Enviar carrito completo por WhatsApp
+document.getElementById("enviar-carrito").addEventListener("click", ()=>{
+  if(carrito.length === 0){
+    alert("El carrito está vacío");
+    return;
+  }
+  let mensaje = "Hola, quiero hacer el siguiente pedido:\n";
+  carrito.forEach(item => {
+    mensaje += `${item.nombre} - Talla: ${item.talla}, Color: ${item.color}, Cantidad: ${item.cantidad}, Total: $${item.precio*item.cantidad}\n`;
+  });
+  const total = carrito.reduce((sum,item)=>sum+item.precio*item.cantidad,0);
+  mensaje += `TOTAL GENERAL: $${total} MXN`;
+  const whatsappLink = `https://wa.me/521TU_NUMERO?text=${encodeURIComponent(mensaje)}`;
+  window.open(whatsappLink,"_blank");
+});
+
+
+
